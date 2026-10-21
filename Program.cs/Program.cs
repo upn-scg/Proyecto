@@ -1,11 +1,11 @@
 ﻿
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 
 class Program
 {
-    // Lista principal de documentos en memoria.
     static List<Documento> documentos = new List<Documento>();
 
     static string[] tiposDocumento =
@@ -15,6 +15,15 @@ class Program
         "Oficio",
         "Memorando",
         "Solicitud de documentación o de copia de historia clínica"
+    };
+
+    static string[] estadosDocumento =
+    {
+        "Recibido",
+        "En revisión",
+        "Derivado",
+        "Observado",
+        "Atendido"
     };
 
     static void Main()
@@ -33,23 +42,19 @@ class Program
                     break;
 
                 case 2:
-                    Console.WriteLine(
-                        "La búsqueda se implementará en la etapa 3.");
+                    BuscarDocumento();
                     break;
 
                 case 3:
-                    Console.WriteLine(
-                        "El listado se implementará en la etapa 3.");
+                    ListarDocumentos();
                     break;
 
                 case 4:
-                    Console.WriteLine(
-                        "El ordenamiento se implementará en la etapa 3.");
+                    OrdenarDocumentos();
                     break;
 
                 case 5:
-                    Console.WriteLine(
-                        "La actualización se implementará en la etapa 3.");
+                    ActualizarEstado();
                     break;
 
                 case 6:
@@ -77,7 +82,7 @@ class Program
     static void MostrarMenu()
     {
         Console.WriteLine("======================================");
-        Console.WriteLine("     MESA DE PARTES DIGITAL");
+        Console.WriteLine("        MESA DE PARTES DIGITAL");
         Console.WriteLine("======================================");
         Console.WriteLine("1. Registrar documento");
         Console.WriteLine("2. Buscar documento");
@@ -103,21 +108,20 @@ class Program
         return 0;
     }
 
+    // ETAPA 2: REGISTRO DE DOCUMENTOS
+
     static void RegistrarDocumento()
     {
         Console.WriteLine("\n--- REGISTRO DE DOCUMENTO ---");
 
         string dni = LeerDniValido();
         string nombre = LeerTextoObligatorio("Nombre del remitente: ");
-
         string tipo = LeerTipoDocumento();
         string asunto = LeerTextoObligatorio("Asunto del documento: ");
         DateTime fecha = LeerFechaValida();
 
-        // El código se genera automáticamente.
         string codigo = GenerarCodigoExpediente();
 
-        // Todo documento nuevo comienza como recibido.
         Documento nuevoDocumento = new Documento(
             codigo,
             dni,
@@ -133,8 +137,6 @@ class Program
         Console.WriteLine("\nDocumento registrado correctamente.");
         Console.WriteLine("Código de expediente: " + codigo);
         Console.WriteLine("Estado inicial: Recibido");
-
-        // La persistencia se incorporará en la etapa 4.
     }
 
     static string LeerDniValido()
@@ -170,14 +172,11 @@ class Program
         while (true)
         {
             Console.Write(mensaje);
-            string texto = Console.ReadLine() ?? "";
-
-            texto = texto.Trim();
+            string texto = (Console.ReadLine() ?? "").Trim();
 
             if (texto.Length == 0)
             {
-                Console.WriteLine(
-                    "Error: este campo es obligatorio.");
+                Console.WriteLine("Error: este campo es obligatorio.");
             }
             else if (texto.Contains("|"))
             {
@@ -254,7 +253,6 @@ class Program
 
         string prefijo = "MP-" + anioActual + "-";
 
-        // Busca el mayor correlativo del año en la lista actual.
         foreach (Documento documento in documentos)
         {
             if (documento.CodigoExpediente.StartsWith(prefijo))
@@ -277,5 +275,209 @@ class Program
         int siguiente = mayorCorrelativo + 1;
 
         return prefijo + siguiente.ToString("D4");
+    }
+
+    // ETAPA 3: BÚSQUEDA DE DOCUMENTOS
+
+    static void BuscarDocumento()
+    {
+        Console.WriteLine("\n--- BÚSQUEDA DE DOCUMENTOS ---");
+        Console.WriteLine("1. Buscar por código de expediente");
+        Console.WriteLine("2. Buscar por DNI del remitente");
+        Console.Write("Seleccione el tipo de búsqueda: ");
+
+        string entrada = Console.ReadLine() ?? "";
+        int opcion;
+
+        if (!int.TryParse(entrada, out opcion) ||
+            (opcion != 1 && opcion != 2))
+        {
+            Console.WriteLine("Opción de búsqueda inválida.");
+            return;
+        }
+
+        if (opcion == 1)
+        {
+            Console.Write("Ingrese el código de expediente: ");
+            string codigo = (Console.ReadLine() ?? "").Trim();
+
+            bool encontrado = false;
+
+            foreach (Documento documento in documentos)
+            {
+                if (string.Equals(
+                    documento.CodigoExpediente,
+                    codigo,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    MostrarDocumento(documento);
+                    encontrado = true;
+                    break;
+                }
+            }
+
+            if (!encontrado)
+            {
+                Console.WriteLine(
+                    "No se encontró un documento con ese código.");
+            }
+        }
+        else
+        {
+            string dni = LeerDniValido();
+            bool encontrado = false;
+
+            foreach (Documento documento in documentos)
+            {
+                if (documento.DniRemitente == dni)
+                {
+                    MostrarDocumento(documento);
+                    encontrado = true;
+                }
+            }
+
+            if (!encontrado)
+            {
+                Console.WriteLine(
+                    "No se encontraron documentos asociados a ese DNI.");
+            }
+        }
+    }
+
+    // ETAPA 3: LISTADO DE DOCUMENTOS
+
+    static void ListarDocumentos()
+    {
+        Console.WriteLine("\n--- DOCUMENTOS REGISTRADOS ---");
+
+        if (documentos.Count == 0)
+        {
+            Console.WriteLine("No hay documentos registrados.");
+            return;
+        }
+
+        foreach (Documento documento in documentos)
+        {
+            MostrarDocumento(documento);
+        }
+
+        Console.WriteLine(
+            "Total de documentos: " + documentos.Count);
+    }
+
+    static void MostrarDocumento(Documento documento)
+    {
+        Console.WriteLine("\n--------------------------------------");
+        Console.WriteLine("Código de expediente: " +
+            documento.CodigoExpediente);
+        Console.WriteLine("DNI del remitente: " +
+            documento.DniRemitente);
+        Console.WriteLine("Nombre del remitente: " +
+            documento.NombreRemitente);
+        Console.WriteLine("Tipo de documento: " +
+            documento.TipoDocumento);
+        Console.WriteLine("Asunto: " + documento.Asunto);
+        Console.WriteLine("Fecha de recepción: " +
+            documento.FechaRecepcion.ToString("dd/MM/yyyy"));
+        Console.WriteLine("Estado: " + documento.Estado);
+        Console.WriteLine("--------------------------------------");
+    }
+
+    // ETAPA 3: ORDENAMIENTO POR BURBUJA
+
+    static void OrdenarDocumentos()
+    {
+        Console.WriteLine("\n--- ORDENAMIENTO POR CÓDIGO ---");
+
+        if (documentos.Count == 0)
+        {
+            Console.WriteLine("No hay documentos para ordenar.");
+            return;
+        }
+
+        // Compara documentos vecinos e intercambia los que
+        // están en el orden incorrecto.
+        for (int i = 0; i < documentos.Count - 1; i++)
+        {
+            for (int j = 0; j < documentos.Count - 1 - i; j++)
+            {
+                int comparacion = string.Compare(
+                    documentos[j].CodigoExpediente,
+                    documentos[j + 1].CodigoExpediente,
+                    StringComparison.Ordinal
+                );
+
+                if (comparacion > 0)
+                {
+                    Documento temporal = documentos[j];
+                    documentos[j] = documentos[j + 1];
+                    documentos[j + 1] = temporal;
+                }
+            }
+        }
+
+        Console.WriteLine("Documentos ordenados correctamente.");
+        ListarDocumentos();
+    }
+
+    // ETAPA 3: ACTUALIZACIÓN DEL ESTADO
+
+    static void ActualizarEstado()
+    {
+        Console.WriteLine("\n--- ACTUALIZACIÓN DE ESTADO ---");
+        Console.Write("Ingrese el código de expediente: ");
+
+        string codigo = (Console.ReadLine() ?? "").Trim();
+
+        Documento documentoEncontrado = null;
+
+        foreach (Documento documento in documentos)
+        {
+            if (string.Equals(
+                documento.CodigoExpediente,
+                codigo,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                documentoEncontrado = documento;
+                break;
+            }
+        }
+
+        if (documentoEncontrado == null)
+        {
+            Console.WriteLine(
+                "No existe un documento con ese código.");
+            return;
+        }
+
+        Console.WriteLine(
+            "Estado actual: " + documentoEncontrado.Estado);
+
+        Console.WriteLine("\nSeleccione el nuevo estado:");
+
+        for (int i = 0; i < estadosDocumento.Length; i++)
+        {
+            Console.WriteLine(
+                (i + 1) + ". " + estadosDocumento[i]);
+        }
+
+        Console.Write("Opción: ");
+        string entrada = Console.ReadLine() ?? "";
+
+        int opcion;
+
+        if (!int.TryParse(entrada, out opcion) ||
+            opcion < 1 ||
+            opcion > estadosDocumento.Length)
+        {
+            Console.WriteLine(
+                "Opción inválida. El estado no fue modificado.");
+            return;
+        }
+
+        documentoEncontrado.Estado = estadosDocumento[opcion - 1];
+
+        Console.WriteLine("Estado actualizado correctamente.");
+        MostrarDocumento(documentoEncontrado);
     }
 }
